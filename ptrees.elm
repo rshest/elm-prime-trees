@@ -1,16 +1,20 @@
 module Ptree where
 
-import Color exposing (..)
+import Color 
+import Time
+import List 
+import Window
+import Text
+import String
+
+import Signal exposing (..)
 import Graphics.Collage exposing (..)
 import Graphics.Element exposing (..)
-import Time exposing (..)
-import Signal exposing (..)
-import List exposing (..)
 
 goldenPhi: Float
 goldenPhi = 137.5/180.0*pi
 
-opt = { trunkClr = hsl 0.3 0.5 0.4, 
+opt = { trunkClr = Color.hsl 0.3 0.5 0.4, 
         trunkH = 80, trunkW1 = 3, trunkW2 = 2, rootH = 0, 
         fruitHue = 1.5, fruitR = 20,
         branchCone = 100, coneDamping = 0.95, 
@@ -70,32 +74,44 @@ ptree factors = collage 400 300
                 [subTree opt.branchCone factors 
                      |> moveY -150]
 
+factorsString: List Int -> String
+factorsString factors = 
+    factors 
+        |> List.drop 1
+        |> List.map toString
+        |> String.join "x"
+
 caption: Int -> List Int -> Element
 caption n factors = 
-    show (toString n ++  
-         (if length factors == 2 
+    toString n ++  
+         (if List.length factors == 2 
           then " - PRIME!" 
-          else " = " ++ toString (drop 1 factors)))
+          else " = " ++ factorsString factors)
+        |> Text.fromString 
+        |> Text.bold
+        |> Text.color Color.blue
+        |> Text.height 20
+        |> centered
 
 primeView: Int -> Element
 primeView n = 
     let factors = primes n in           
-    flow down [caption n factors, ptree factors]
+    flow down [caption n factors |> width 400, ptree factors]
 
 main: Signal Element
 main = 
     primeView 
-    << (\n -> (n//opt.animDelay)%(opt.maxNum)) 
+    << (\n -> (n//opt.animDelay)%(opt.maxNum) + 1) 
     << round 
-    << inSeconds 
-    <~ every second
+    << Time.inSeconds 
+    <~ Time.every Time.second
 
-fruitGrad: Float -> Gradient
+fruitGrad: Float -> Color.Gradient
 fruitGrad h = 
-    radial (0, 0) 3 
+    Color.radial (0, 0) 3 
            (4, -4) 16
-           [(0, hsl h 0.5 0.8), 
-            (1, hsl h 0.5 0.5)]
+           [(0, Color.hsl h 0.5 0.8), 
+            (1, Color.hsl h 0.5 0.5)]
 
 primeFactors: Int -> Int -> List Int
 primeFactors n s = 
