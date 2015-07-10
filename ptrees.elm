@@ -23,7 +23,8 @@ opt = {
     branchCone = 100, coneDamping = 0.95, 
     nestScale = 0.8, 
     budTreshold = 17, budSpread = 5, budOffs = 30, 
-    animDelay = 5, maxNum = 512 }
+    animDelay = 5, maxNum = 512,
+    fontHeight = 22, captionHeight = 27, refH = 300 }
 
 trunk: Form
 trunk = 
@@ -78,9 +79,11 @@ subTree cone s i =
     _ -> fruit (opt.fruitHueScale*(toFloat i) + opt.fruitHueOffs)
 
 
-ptree: List Int -> Element         
-ptree factors = 
-    collage 400 300 [subTree opt.branchCone factors 0 |> moveY -150]
+ptree: List Int -> (Int, Int) -> Element         
+ptree factors (w, h) = 
+    collage w h [subTree opt.branchCone factors 0
+                 |> moveY (toFloat (-h//2))
+                 |> scale ((toFloat (min h w))/(toFloat opt.refH))]
 
 factorsString: List Int -> String
 factorsString factors = 
@@ -98,21 +101,20 @@ caption n factors =
         |> Text.fromString 
         |> Text.bold
         |> Text.color Color.blue
-        |> Text.height 20
+        |> Text.height (toFloat opt.fontHeight)
         |> centered
 
-primeView: Int -> Element
-primeView n = 
+primeView: Int -> (Int, Int) -> Element
+primeView n (w, h) = 
     let factors = primes n in           
-    flow down [caption n factors |> width 400, ptree factors]
+    flow down [caption n factors |> width  w,
+               ptree factors (w, h - opt.captionHeight)]
 
 main: Signal Element
 main = 
     primeView 
-    << (\n -> (n//opt.animDelay)%(opt.maxNum) + 1) 
-    << round 
-    << Time.inSeconds 
-    <~ Time.every Time.second
+    <~ foldp (\a b -> (b + 1)%opt.maxNum) 1 (Time.every (Time.second*opt.animDelay))
+     ~ Window.dimensions
 
 fruitGrad: Float -> Color.Gradient
 fruitGrad h = 

@@ -177,6 +177,70 @@ Elm.Basics.make = function (_elm) {
                         ,GT: GT};
    return _elm.Basics.values;
 };
+Elm.Char = Elm.Char || {};
+Elm.Char.make = function (_elm) {
+   "use strict";
+   _elm.Char = _elm.Char || {};
+   if (_elm.Char.values)
+   return _elm.Char.values;
+   var _op = {},
+   _N = Elm.Native,
+   _U = _N.Utils.make(_elm),
+   _L = _N.List.make(_elm),
+   $moduleName = "Char",
+   $Basics = Elm.Basics.make(_elm),
+   $Native$Char = Elm.Native.Char.make(_elm);
+   var fromCode = $Native$Char.fromCode;
+   var toCode = $Native$Char.toCode;
+   var toLocaleLower = $Native$Char.toLocaleLower;
+   var toLocaleUpper = $Native$Char.toLocaleUpper;
+   var toLower = $Native$Char.toLower;
+   var toUpper = $Native$Char.toUpper;
+   var isBetween = F3(function (low,
+   high,
+   $char) {
+      return function () {
+         var code = toCode($char);
+         return _U.cmp(code,
+         toCode(low)) > -1 && _U.cmp(code,
+         toCode(high)) < 1;
+      }();
+   });
+   var isUpper = A2(isBetween,
+   _U.chr("A"),
+   _U.chr("Z"));
+   var isLower = A2(isBetween,
+   _U.chr("a"),
+   _U.chr("z"));
+   var isDigit = A2(isBetween,
+   _U.chr("0"),
+   _U.chr("9"));
+   var isOctDigit = A2(isBetween,
+   _U.chr("0"),
+   _U.chr("7"));
+   var isHexDigit = function ($char) {
+      return isDigit($char) || (A3(isBetween,
+      _U.chr("a"),
+      _U.chr("f"),
+      $char) || A3(isBetween,
+      _U.chr("A"),
+      _U.chr("F"),
+      $char));
+   };
+   _elm.Char.values = {_op: _op
+                      ,isUpper: isUpper
+                      ,isLower: isLower
+                      ,isDigit: isDigit
+                      ,isOctDigit: isOctDigit
+                      ,isHexDigit: isHexDigit
+                      ,toUpper: toUpper
+                      ,toLower: toLower
+                      ,toLocaleUpper: toLocaleUpper
+                      ,toLocaleLower: toLocaleLower
+                      ,toCode: toCode
+                      ,fromCode: fromCode};
+   return _elm.Char.values;
+};
 Elm.Color = Elm.Color || {};
 Elm.Color.make = function (_elm) {
    "use strict";
@@ -2105,6 +2169,27 @@ Elm.Native.Basics.make = function(localRuntime) {
 		toFloat: function(x) { return x; },
 		isNaN: isNaN,
 		isInfinite: isInfinite
+	};
+};
+
+Elm.Native.Char = {};
+Elm.Native.Char.make = function(localRuntime) {
+	localRuntime.Native = localRuntime.Native || {};
+	localRuntime.Native.Char = localRuntime.Native.Char || {};
+	if (localRuntime.Native.Char.values)
+	{
+		return localRuntime.Native.Char.values;
+	}
+
+	var Utils = Elm.Native.Utils.make(localRuntime);
+
+	return localRuntime.Native.Char.values = {
+		fromCode : function(c) { return Utils.chr(String.fromCharCode(c)); },
+		toCode   : function(c) { return c.charCodeAt(0); },
+		toUpper  : function(c) { return Utils.chr(c.toUpperCase()); },
+		toLower  : function(c) { return Utils.chr(c.toLowerCase()); },
+		toLocaleUpper : function(c) { return Utils.chr(c.toLocaleUpperCase()); },
+		toLocaleLower : function(c) { return Utils.chr(c.toLocaleLowerCase()); },
 	};
 };
 
@@ -5257,6 +5342,349 @@ Elm.Native.Signal.make = function(localRuntime) {
 	};
 };
 
+Elm.Native.String = {};
+Elm.Native.String.make = function(localRuntime) {
+
+	localRuntime.Native = localRuntime.Native || {};
+	localRuntime.Native.String = localRuntime.Native.String || {};
+	if (localRuntime.Native.String.values)
+	{
+		return localRuntime.Native.String.values;
+	}
+	if ('values' in Elm.Native.String)
+	{
+		return localRuntime.Native.String.values = Elm.Native.String.values;
+	}
+
+
+	var Char = Elm.Char.make(localRuntime);
+	var List = Elm.Native.List.make(localRuntime);
+	var Maybe = Elm.Maybe.make(localRuntime);
+	var Result = Elm.Result.make(localRuntime);
+	var Utils = Elm.Native.Utils.make(localRuntime);
+
+	function isEmpty(str)
+	{
+		return str.length === 0;
+	}
+	function cons(chr,str)
+	{
+		return chr + str;
+	}
+	function uncons(str)
+	{
+		var hd;
+		return (hd = str[0])
+			? Maybe.Just(Utils.Tuple2(Utils.chr(hd), str.slice(1)))
+			: Maybe.Nothing;
+	}
+	function append(a,b)
+	{
+		return a + b;
+	}
+	function concat(strs)
+	{
+		return List.toArray(strs).join('');
+	}
+	function length(str)
+	{
+		return str.length;
+	}
+	function map(f,str)
+	{
+		var out = str.split('');
+		for (var i = out.length; i--; )
+		{
+			out[i] = f(Utils.chr(out[i]));
+		}
+		return out.join('');
+	}
+	function filter(pred,str)
+	{
+		return str.split('').map(Utils.chr).filter(pred).join('');
+	}
+	function reverse(str)
+	{
+		return str.split('').reverse().join('');
+	}
+	function foldl(f,b,str)
+	{
+		var len = str.length;
+		for (var i = 0; i < len; ++i)
+		{
+			b = A2(f, Utils.chr(str[i]), b);
+		}
+		return b;
+	}
+	function foldr(f,b,str)
+	{
+		for (var i = str.length; i--; )
+		{
+			b = A2(f, Utils.chr(str[i]), b);
+		}
+		return b;
+	}
+
+	function split(sep, str)
+	{
+		return List.fromArray(str.split(sep));
+	}
+	function join(sep, strs)
+	{
+		return List.toArray(strs).join(sep);
+	}
+	function repeat(n, str)
+	{
+		var result = '';
+		while (n > 0)
+		{
+			if (n & 1)
+			{
+				result += str;
+			}
+			n >>= 1, str += str;
+		}
+		return result;
+	}
+
+	function slice(start, end, str)
+	{
+		return str.slice(start,end);
+	}
+	function left(n, str)
+	{
+		return n < 1 ? "" : str.slice(0,n);
+	}
+	function right(n, str)
+	{
+		return n < 1 ? "" : str.slice(-n);
+	}
+	function dropLeft(n, str)
+	{
+		return n < 1 ? str : str.slice(n);
+	}
+	function dropRight(n, str)
+	{
+		return n < 1 ? str : str.slice(0,-n);
+	}
+
+	function pad(n,chr,str)
+	{
+		var half = (n - str.length) / 2;
+		return repeat(Math.ceil(half),chr) + str + repeat(half|0,chr);
+	}
+	function padRight(n,chr,str)
+	{
+		return str + repeat(n - str.length, chr);
+	}
+	function padLeft(n,chr,str)
+	{
+		return repeat(n - str.length, chr) + str;
+	}
+
+	function trim(str)
+	{
+		return str.trim();
+	}
+	function trimLeft(str)
+	{
+		return str.trimLeft();
+	}
+	function trimRight(str)
+	{
+		return str.trimRight();
+	}
+
+	function words(str)
+	{
+		return List.fromArray(str.trim().split(/\s+/g));
+	}
+	function lines(str)
+	{
+		return List.fromArray(str.split(/\r\n|\r|\n/g));
+	}
+
+	function toUpper(str)
+	{
+		return str.toUpperCase();
+	}
+	function toLower(str)
+	{
+		return str.toLowerCase();
+	}
+
+	function any(pred, str)
+	{
+		for (var i = str.length; i--; )
+		{
+			if (pred(Utils.chr(str[i])))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	function all(pred, str)
+	{
+		for (var i = str.length; i--; )
+		{
+			if (!pred(Utils.chr(str[i])))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	function contains(sub, str)
+	{
+		return str.indexOf(sub) > -1;
+	}
+	function startsWith(sub, str)
+	{
+		return str.indexOf(sub) === 0;
+	}
+	function endsWith(sub, str)
+	{
+		return str.length >= sub.length &&
+			str.lastIndexOf(sub) === str.length - sub.length;
+	}
+	function indexes(sub, str)
+	{
+		var subLen = sub.length;
+		var i = 0;
+		var is = [];
+		while ((i = str.indexOf(sub, i)) > -1)
+		{
+			is.push(i);
+			i = i + subLen;
+		}
+		return List.fromArray(is);
+	}
+
+	function toInt(s)
+	{
+		var len = s.length;
+		if (len === 0)
+		{
+			return Result.Err("could not convert string '" + s + "' to an Int" );
+		}
+		var start = 0;
+		if (s[0] == '-')
+		{
+			if (len === 1)
+			{
+				return Result.Err("could not convert string '" + s + "' to an Int" );
+			}
+			start = 1;
+		}
+		for (var i = start; i < len; ++i)
+		{
+			if (!Char.isDigit(s[i]))
+			{
+				return Result.Err("could not convert string '" + s + "' to an Int" );
+			}
+		}
+		return Result.Ok(parseInt(s, 10));
+	}
+
+	function toFloat(s)
+	{
+		var len = s.length;
+		if (len === 0)
+		{
+			return Result.Err("could not convert string '" + s + "' to a Float" );
+		}
+		var start = 0;
+		if (s[0] == '-')
+		{
+			if (len === 1)
+			{
+				return Result.Err("could not convert string '" + s + "' to a Float" );
+			}
+			start = 1;
+		}
+		var dotCount = 0;
+		for (var i = start; i < len; ++i)
+		{
+			if (Char.isDigit(s[i]))
+			{
+				continue;
+			}
+			if (s[i] === '.')
+			{
+				dotCount += 1;
+				if (dotCount <= 1)
+				{
+					continue;
+				}
+			}
+			return Result.Err("could not convert string '" + s + "' to a Float" );
+		}
+		return Result.Ok(parseFloat(s));
+	}
+
+	function toList(str)
+	{
+		return List.fromArray(str.split('').map(Utils.chr));
+	}
+	function fromList(chars)
+	{
+		return List.toArray(chars).join('');
+	}
+
+	return Elm.Native.String.values = {
+		isEmpty: isEmpty,
+		cons: F2(cons),
+		uncons: uncons,
+		append: F2(append),
+		concat: concat,
+		length: length,
+		map: F2(map),
+		filter: F2(filter),
+		reverse: reverse,
+		foldl: F3(foldl),
+		foldr: F3(foldr),
+
+		split: F2(split),
+		join: F2(join),
+		repeat: F2(repeat),
+
+		slice: F3(slice),
+		left: F2(left),
+		right: F2(right),
+		dropLeft: F2(dropLeft),
+		dropRight: F2(dropRight),
+
+		pad: F3(pad),
+		padLeft: F3(padLeft),
+		padRight: F3(padRight),
+
+		trim: trim,
+		trimLeft: trimLeft,
+		trimRight: trimRight,
+
+		words: words,
+		lines: lines,
+
+		toUpper: toUpper,
+		toLower: toLower,
+
+		any: F2(any),
+		all: F2(all),
+
+		contains: F2(contains),
+		startsWith: F2(startsWith),
+		endsWith: F2(endsWith),
+		indexes: F2(indexes),
+
+		toInt: toInt,
+		toFloat: toFloat,
+		toList: toList,
+		fromList: fromList
+	};
+};
+
 Elm.Native.Task = {};
 Elm.Native.Task.make = function(localRuntime) {
 
@@ -6356,6 +6784,75 @@ Elm.Native.Utils.make = function(localRuntime) {
 	};
 };
 
+Elm.Native = Elm.Native || {};
+Elm.Native.Window = {};
+Elm.Native.Window.make = function(localRuntime) {
+
+	localRuntime.Native = localRuntime.Native || {};
+	localRuntime.Native.Window = localRuntime.Native.Window || {};
+	if (localRuntime.Native.Window.values)
+	{
+		return localRuntime.Native.Window.values;
+	}
+
+	var NS = Elm.Native.Signal.make(localRuntime);
+	var Tuple2 = Elm.Native.Utils.make(localRuntime).Tuple2;
+
+
+	function getWidth()
+	{
+		return localRuntime.node.clientWidth;
+	}
+
+
+	function getHeight()
+	{
+		if (localRuntime.isFullscreen())
+		{
+			return window.innerHeight;
+		}
+		return localRuntime.node.clientHeight;
+	}
+
+
+	var dimensions = NS.input('Window.dimensions', Tuple2(getWidth(), getHeight()));
+
+
+	function resizeIfNeeded()
+	{
+		// Do not trigger event if the dimensions have not changed.
+		// This should be most of the time.
+		var w = getWidth();
+		var h = getHeight();
+		if (dimensions.value._0 === w && dimensions.value._1 === h)
+		{
+			return;
+		}
+
+		setTimeout(function () {
+			// Check again to see if the dimensions have changed.
+			// It is conceivable that the dimensions have changed
+			// again while some other event was being processed.
+			var w = getWidth();
+			var h = getHeight();
+			if (dimensions.value._0 === w && dimensions.value._1 === h)
+			{
+				return;
+			}
+			localRuntime.notify(dimensions.id, Tuple2(w,h));
+		}, 0);
+	}
+
+
+	localRuntime.addListener([dimensions.id], window, 'resize', resizeIfNeeded);
+
+
+	return localRuntime.Native.Window.values = {
+		dimensions: dimensions,
+		resizeIfNeeded: resizeIfNeeded
+	};
+};
+
 Elm.Ptree = Elm.Ptree || {};
 Elm.Ptree.make = function (_elm) {
    "use strict";
@@ -6375,7 +6872,10 @@ Elm.Ptree.make = function (_elm) {
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
-   $Time = Elm.Time.make(_elm);
+   $String = Elm.String.make(_elm),
+   $Text = Elm.Text.make(_elm),
+   $Time = Elm.Time.make(_elm),
+   $Window = Elm.Window.make(_elm);
    var primeFactors = F2(function (n,
    s) {
       return _U.cmp(s * s,
@@ -6398,55 +6898,31 @@ Elm.Ptree.make = function (_elm) {
       1,
       A2(primeFactors,n,2));
    };
-   var fruitGrad = function (h) {
-      return A5($Color.radial,
-      {ctor: "_Tuple2",_0: 0,_1: 0},
-      3,
-      {ctor: "_Tuple2",_0: 4,_1: -4},
-      16,
-      _L.fromArray([{ctor: "_Tuple2"
-                    ,_0: 0
-                    ,_1: A3($Color.hsl,h,0.5,0.8)}
-                   ,{ctor: "_Tuple2"
-                    ,_0: 1
-                    ,_1: A3($Color.hsl,
-                    h,
-                    0.5,
-                    0.5)}]));
+   var factorsString = function (factors) {
+      return $String.join("x")($List.map($Basics.toString)($List.drop(1)(factors)));
    };
-   var caption = F2(function (n,
-   factors) {
-      return $Graphics$Element.show(A2($Basics._op["++"],
-      $Basics.toString(n),
-      _U.eq($List.length(factors),
-      2) ? " - PRIME!" : A2($Basics._op["++"],
-      " = ",
-      $Basics.toString(A2($List.drop,
-      1,
-      factors)))));
-   });
-   var branchAngle = F3(function (cone,
-   i,
-   n) {
-      return _U.cmp(n,
-      1) < 1 ? 0 : $Basics.degrees(i - (n - 1) / 2) * cone / (n - 1);
-   });
    var opt = {_: {}
              ,animDelay: 5
              ,branchCone: 100
-             ,budOffs: 20
+             ,budOffs: 30
              ,budSpread: 5
-             ,budTreshold: 11
+             ,budTreshold: 17
+             ,captionHeight: 27
              ,coneDamping: 0.95
-             ,fruitHue: 1.5
+             ,fontHeight: 22
+             ,fruitHueOffs: 1.5
+             ,fruitHueScale: 0.1
+             ,fruitLightness: 0.7
              ,fruitR: 20
+             ,fruitSaturation: 0.4
              ,maxNum: 512
              ,nestScale: 0.8
+             ,refH: 300
              ,rootH: 0
              ,trunkClr: A3($Color.hsl,
              0.3,
-             0.5,
-             0.4)
+             0.3,
+             0.5)
              ,trunkH: 80
              ,trunkW1: 3
              ,trunkW2: 2};
@@ -6465,6 +6941,34 @@ Elm.Ptree.make = function (_elm) {
                                                                                              ,{ctor: "_Tuple2"
                                                                                               ,_0: 0
                                                                                               ,_1: 0 - opt.rootH}])));
+   var caption = F2(function (n,
+   factors) {
+      return $Graphics$Element.centered($Text.height($Basics.toFloat(opt.fontHeight))($Text.color($Color.blue)($Text.bold($Text.fromString(A2($Basics._op["++"],
+      $Basics.toString(n),
+      _U.eq($List.length(factors),
+      2) ? " - PRIME!" : A2($Basics._op["++"],
+      " = ",
+      factorsString(factors))))))));
+   });
+   var fruitGrad = function (h) {
+      return A5($Color.radial,
+      {ctor: "_Tuple2",_0: 0,_1: 0},
+      5,
+      {ctor: "_Tuple2",_0: 4,_1: -4},
+      16,
+      _L.fromArray([{ctor: "_Tuple2"
+                    ,_0: 0
+                    ,_1: A3($Color.hsl,
+                    h,
+                    opt.fruitSaturation,
+                    opt.fruitLightness + 0.2)}
+                   ,{ctor: "_Tuple2"
+                    ,_0: 1
+                    ,_1: A3($Color.hsl,
+                    h,
+                    opt.fruitSaturation,
+                    opt.fruitLightness)}]));
+   };
    var fruit = function (h) {
       return $Graphics$Collage.gradient(fruitGrad(h))($Graphics$Collage.circle(opt.fruitR));
    };
@@ -6474,22 +6978,28 @@ Elm.Ptree.make = function (_elm) {
    xs,
    i) {
       return _U.cmp(n,
-      opt.budTreshold) < 1 ? $Graphics$Collage.rotate(A3(branchAngle,
-      cone,
-      $Basics.toFloat(i),
-      $Basics.toFloat(n)))($Graphics$Collage.group(_L.fromArray([trunk
-                                                                ,$Graphics$Collage.scale(opt.nestScale)($Graphics$Collage.moveY(opt.trunkH)(A2(subTree,
-                                                                cone,
-                                                                xs)))]))) : function () {
+      opt.budTreshold) < 1 ? function () {
+         var fi = $Basics.toFloat(i);
+         var fn = $Basics.toFloat(n);
+         var branchAngle = _U.cmp(n,
+         1) < 1 ? 0 : $Basics.degrees(fi - (fn - 1) / 2) * cone / (fn - 1);
+         return $Graphics$Collage.rotate(branchAngle)($Graphics$Collage.group(_L.fromArray([trunk
+                                                                                           ,$Graphics$Collage.scale(opt.nestScale)($Graphics$Collage.moveY(opt.trunkH)(A3(subTree,
+                                                                                           cone,
+                                                                                           xs,
+                                                                                           i)))])));
+      }() : function () {
          var ang = goldenPhi * $Basics.toFloat(i);
          var r = $Basics.sqrt(ang) * opt.budSpread;
-         return $Graphics$Collage.moveY(opt.budOffs)($Graphics$Collage.rotate(ang)($Graphics$Collage.group(_L.fromArray([$Graphics$Collage.scale(opt.nestScale * 0.5)($Graphics$Collage.moveY(r)(A2(subTree,
+         return $Graphics$Collage.moveY(opt.budOffs)($Graphics$Collage.rotate(ang)($Graphics$Collage.group(_L.fromArray([$Graphics$Collage.scale(opt.nestScale * 0.5)($Graphics$Collage.moveY(r)(A3(subTree,
          cone,
-         xs)))]))));
+         xs,
+         i)))]))));
       }();
    });
-   var subTree = F2(function (cone,
-   s) {
+   var subTree = F3(function (cone,
+   s,
+   i) {
       return function () {
          switch (s.ctor)
          {case "::":
@@ -6497,46 +7007,70 @@ Elm.Ptree.make = function (_elm) {
               s._0,
               cone * opt.coneDamping,
               s._1))(_L.range(0,s._0 - 1)));}
-         return fruit(opt.fruitHue);
+         return fruit(opt.fruitHueScale * $Basics.toFloat(i) + opt.fruitHueOffs);
       }();
    });
-   var ptree = function (factors) {
-      return A3($Graphics$Collage.collage,
-      400,
-      300,
-      _L.fromArray([$Graphics$Collage.moveY(-150)(A2(subTree,
-      opt.branchCone,
-      factors))]));
-   };
-   var primeView = function (n) {
+   var ptree = F2(function (factors,
+   _v3) {
       return function () {
-         var factors = primes(n);
-         return A2($Graphics$Element.flow,
-         $Graphics$Element.down,
-         _L.fromArray([A2(caption,
-                      n,
-                      factors)
-                      ,ptree(factors)]));
+         switch (_v3.ctor)
+         {case "_Tuple2":
+            return A3($Graphics$Collage.collage,
+              _v3._0,
+              _v3._1,
+              _L.fromArray([$Graphics$Collage.scale($Basics.toFloat(A2($Basics.min,
+              _v3._1,
+              _v3._0)) / $Basics.toFloat(opt.refH))($Graphics$Collage.moveY($Basics.toFloat((0 - _v3._1) / 2 | 0))(A3(subTree,
+              opt.branchCone,
+              factors,
+              0)))]));}
+         _U.badCase($moduleName,
+         "between lines 84 and 86");
       }();
-   };
-   var main = A2($Signal._op["<~"],
-   function ($) {
-      return primeView(function (n) {
-         return A2($Basics._op["%"],
-         n / opt.animDelay | 0,
-         opt.maxNum);
-      }($Basics.round($Time.inSeconds($))));
-   },
-   $Time.every($Time.second));
+   });
+   var primeView = F2(function (n,
+   _v7) {
+      return function () {
+         switch (_v7.ctor)
+         {case "_Tuple2":
+            return function () {
+                 var factors = primes(n);
+                 return A2($Graphics$Element.flow,
+                 $Graphics$Element.down,
+                 _L.fromArray([$Graphics$Element.width(_v7._0)(A2(caption,
+                              n,
+                              factors))
+                              ,A2(ptree,
+                              factors,
+                              {ctor: "_Tuple2"
+                              ,_0: _v7._0
+                              ,_1: _v7._1 - opt.captionHeight})]));
+              }();}
+         _U.badCase($moduleName,
+         "between lines 109 and 111");
+      }();
+   });
+   var main = A2($Signal._op["~"],
+   A2($Signal._op["<~"],
+   primeView,
+   A3($Signal.foldp,
+   F2(function (a,b) {
+      return A2($Basics._op["%"],
+      b + 1,
+      opt.maxNum);
+   }),
+   1,
+   $Time.every($Time.second * opt.animDelay))),
+   $Window.dimensions);
    _elm.Ptree.values = {_op: _op
                        ,goldenPhi: goldenPhi
                        ,opt: opt
                        ,trunk: trunk
                        ,fruit: fruit
-                       ,branchAngle: branchAngle
                        ,branchFork: branchFork
                        ,subTree: subTree
                        ,ptree: ptree
+                       ,factorsString: factorsString
                        ,caption: caption
                        ,primeView: primeView
                        ,main: main
@@ -6932,6 +7466,107 @@ Elm.Signal.make = function (_elm) {
                         ,forwardTo: forwardTo
                         ,Mailbox: Mailbox};
    return _elm.Signal.values;
+};
+Elm.String = Elm.String || {};
+Elm.String.make = function (_elm) {
+   "use strict";
+   _elm.String = _elm.String || {};
+   if (_elm.String.values)
+   return _elm.String.values;
+   var _op = {},
+   _N = Elm.Native,
+   _U = _N.Utils.make(_elm),
+   _L = _N.List.make(_elm),
+   $moduleName = "String",
+   $Maybe = Elm.Maybe.make(_elm),
+   $Native$String = Elm.Native.String.make(_elm),
+   $Result = Elm.Result.make(_elm);
+   var fromList = $Native$String.fromList;
+   var toList = $Native$String.toList;
+   var toFloat = $Native$String.toFloat;
+   var toInt = $Native$String.toInt;
+   var indices = $Native$String.indexes;
+   var indexes = $Native$String.indexes;
+   var endsWith = $Native$String.endsWith;
+   var startsWith = $Native$String.startsWith;
+   var contains = $Native$String.contains;
+   var all = $Native$String.all;
+   var any = $Native$String.any;
+   var toLower = $Native$String.toLower;
+   var toUpper = $Native$String.toUpper;
+   var lines = $Native$String.lines;
+   var words = $Native$String.words;
+   var trimRight = $Native$String.trimRight;
+   var trimLeft = $Native$String.trimLeft;
+   var trim = $Native$String.trim;
+   var padRight = $Native$String.padRight;
+   var padLeft = $Native$String.padLeft;
+   var pad = $Native$String.pad;
+   var dropRight = $Native$String.dropRight;
+   var dropLeft = $Native$String.dropLeft;
+   var right = $Native$String.right;
+   var left = $Native$String.left;
+   var slice = $Native$String.slice;
+   var repeat = $Native$String.repeat;
+   var join = $Native$String.join;
+   var split = $Native$String.split;
+   var foldr = $Native$String.foldr;
+   var foldl = $Native$String.foldl;
+   var reverse = $Native$String.reverse;
+   var filter = $Native$String.filter;
+   var map = $Native$String.map;
+   var length = $Native$String.length;
+   var concat = $Native$String.concat;
+   var append = $Native$String.append;
+   var uncons = $Native$String.uncons;
+   var cons = $Native$String.cons;
+   var fromChar = function ($char) {
+      return A2(cons,$char,"");
+   };
+   var isEmpty = $Native$String.isEmpty;
+   _elm.String.values = {_op: _op
+                        ,isEmpty: isEmpty
+                        ,length: length
+                        ,reverse: reverse
+                        ,repeat: repeat
+                        ,cons: cons
+                        ,uncons: uncons
+                        ,fromChar: fromChar
+                        ,append: append
+                        ,concat: concat
+                        ,split: split
+                        ,join: join
+                        ,words: words
+                        ,lines: lines
+                        ,slice: slice
+                        ,left: left
+                        ,right: right
+                        ,dropLeft: dropLeft
+                        ,dropRight: dropRight
+                        ,contains: contains
+                        ,startsWith: startsWith
+                        ,endsWith: endsWith
+                        ,indexes: indexes
+                        ,indices: indices
+                        ,toInt: toInt
+                        ,toFloat: toFloat
+                        ,toList: toList
+                        ,fromList: fromList
+                        ,toUpper: toUpper
+                        ,toLower: toLower
+                        ,pad: pad
+                        ,padLeft: padLeft
+                        ,padRight: padRight
+                        ,trim: trim
+                        ,trimLeft: trimLeft
+                        ,trimRight: trimRight
+                        ,map: map
+                        ,filter: filter
+                        ,foldl: foldl
+                        ,foldr: foldr
+                        ,any: any
+                        ,all: all};
+   return _elm.String.values;
 };
 Elm.Task = Elm.Task || {};
 Elm.Task.make = function (_elm) {
@@ -7387,4 +8022,31 @@ Elm.Transform2D.make = function (_elm) {
                              ,scaleX: scaleX
                              ,scaleY: scaleY};
    return _elm.Transform2D.values;
+};
+Elm.Window = Elm.Window || {};
+Elm.Window.make = function (_elm) {
+   "use strict";
+   _elm.Window = _elm.Window || {};
+   if (_elm.Window.values)
+   return _elm.Window.values;
+   var _op = {},
+   _N = Elm.Native,
+   _U = _N.Utils.make(_elm),
+   _L = _N.List.make(_elm),
+   $moduleName = "Window",
+   $Basics = Elm.Basics.make(_elm),
+   $Native$Window = Elm.Native.Window.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var dimensions = $Native$Window.dimensions;
+   var width = A2($Signal.map,
+   $Basics.fst,
+   dimensions);
+   var height = A2($Signal.map,
+   $Basics.snd,
+   dimensions);
+   _elm.Window.values = {_op: _op
+                        ,dimensions: dimensions
+                        ,width: width
+                        ,height: height};
+   return _elm.Window.values;
 };
