@@ -6,6 +6,7 @@ import Color
 import Time
 import Window
 import Text
+import Keyboard
 
 import Signal exposing (..)
 import Graphics.Collage exposing (..)
@@ -13,6 +14,18 @@ import Graphics.Element exposing (..)
 
 goldenPhi: Float
 goldenPhi = 137.5/180.0*pi
+
+
+primeFactors: Int -> Int -> List Int
+primeFactors n s = 
+  if | s*s > n -> [n]
+     | n%s == 0 -> s::(primeFactors (n//s) s)
+     | s == 2 -> primeFactors n (s + 1)
+     | otherwise -> primeFactors n (s + 2)
+
+                    
+primes: Int -> List Int
+primes n = 1::(primeFactors n 2)
 
 -- tweakable options
 opt = { 
@@ -25,6 +38,12 @@ opt = {
     budTreshold = 17, budSpread = 5, budOffs = 30, 
     animDelay = 5, maxNum = 512,
     fontHeight = 22, captionHeight = 27, refH = 300 }
+
+fruitGrad: Float -> Color.Gradient
+fruitGrad h = 
+    Color.radial (0, 0) 5 (4, -4) 16
+             [(0, Color.hsl h opt.fruitSaturation (opt.fruitLightness + 0.2)), 
+            (1, Color.hsl h opt.fruitSaturation opt.fruitLightness)]
 
 trunk: Form
 trunk = 
@@ -40,7 +59,7 @@ fruit: Float -> Form
 fruit h = 
     circle opt.fruitR
         |> gradient (fruitGrad h)
-
+           
 
 branchFork: Int -> Float -> List Int -> Int -> Form
 branchFork n cone xs i = 
@@ -70,6 +89,7 @@ branchFork n cone xs i =
           |> rotate ang 
           |> moveY opt.budOffs      
 
+             
 subTree: Float -> List Int -> Int -> Form
 subTree cone s i = 
   case s of
@@ -85,6 +105,7 @@ ptree factors (w, h) =
                  |> moveY (toFloat (-h//2))
                  |> scale ((toFloat (min h w))/(toFloat opt.refH))]
 
+    
 factorsString: List Int -> String
 factorsString factors = 
     factors 
@@ -92,6 +113,7 @@ factorsString factors =
         |> List.map toString
         |> String.join "x"
 
+           
 caption: Int -> List Int -> Element
 caption n factors = 
     toString n ++  
@@ -104,31 +126,44 @@ caption n factors =
         |> Text.height (toFloat opt.fontHeight)
         |> centered
 
-primeView: Int -> (Int, Int) -> Element
-primeView n (w, h) = 
+           
+primeView: (Int, Bool) -> (Int, Int) -> Element
+primeView (n, paused) (w, h) = 
     let factors = primes n in           
     flow down [caption n factors |> width  w,
-               ptree factors (w, h - opt.captionHeight)]
+               layers [
+                ptree factors (w, h - opt.captionHeight),
+                (if paused then "[PAUSED] " else "")
+                     ++ "SPACE - toggle pause, ARROWS - prev/next"
+                  |> Text.fromString 
+                  |> Text.color Color.grey
+                  |> centered
+                  |> width w
+               ]]
 
+    
+type Update = Tick Float | Arrows {x: Int, y:Int} | Press Keyboard.KeyCode
+updates: Signal Update
+updates =
+  mergeMany
+  [ map Tick (Time.every (Time.second*opt.animDelay))
+  , map Arrows Keyboard.arrows
+  , map Press Keyboard.presses
+  ]
+
+
+foldUpdates: Update -> (Int, Bool) -> (Int, Bool)
+foldUpdates update (i, paused) =
+  case update of
+    Arrows {x, y} -> (max 2 ((i + x + y)%opt.maxNum), paused)
+    Press 32 -> (i, not paused)
+    Tick _ -> ((i + (if paused then 0 else 1))%opt.maxNum, paused)
+    _ -> (i, paused)
+
+         
 main: Signal Element
 main = 
     primeView 
-    <~ foldp (\a b -> (b + 1)%opt.maxNum) 1 (Time.every (Time.second*opt.animDelay))
+    <~ foldp foldUpdates (2, False) updates
      ~ Window.dimensions
-
-fruitGrad: Float -> Color.Gradient
-fruitGrad h = 
-    Color.radial (0, 0) 5 (4, -4) 16
-             [(0, Color.hsl h opt.fruitSaturation (opt.fruitLightness + 0.2)), 
-            (1, Color.hsl h opt.fruitSaturation opt.fruitLightness)]
-
-primeFactors: Int -> Int -> List Int
-primeFactors n s = 
-  if | s*s > n -> [n]
-     | n%s == 0 -> s::(primeFactors (n//s) s)
-     | s == 2 -> primeFactors n (s + 1)
-     | otherwise -> primeFactors n (s + 2)
-
-primes: Int -> List Int
-primes n = 1::(primeFactors n 2)
 
