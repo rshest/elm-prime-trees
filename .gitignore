@@ -3,3 +3,6 @@
 /*.json~
 /*.html~
 /*.elm~
+/blog
+/elm.js
+/deploy/index.html~
