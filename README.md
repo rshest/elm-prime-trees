@@ -5,4 +5,4 @@ See the [blog post](http://blog.ruslans.com/2015/07/prime-factorization-elms.htm
 
 Live [demo](http://www.ruslans.com/elm-prime-trees).
 
-![](screenshot.png)
+![](img/screenshot.png)

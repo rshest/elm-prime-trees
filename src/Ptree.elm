@@ -1,16 +1,16 @@
-module Ptree where
+module Ptree exposing (..)
 
 import List
 import String
 import Color 
-import Time
-import Window
 import Text
-import Keyboard
+import Collage exposing (..)
+import Element exposing (..)
+import Html exposing (..)
 
-import Signal exposing (..)
-import Graphics.Collage exposing (..)
-import Graphics.Element exposing (..)
+import Model exposing (..)
+import Msg exposing (..)
+import Opt exposing (..)
 
 goldenPhi: Float
 goldenPhi = 137.5/180.0*pi
@@ -18,26 +18,14 @@ goldenPhi = 137.5/180.0*pi
 
 primeFactors: Int -> Int -> List Int
 primeFactors n s = 
-  if | s*s > n -> [n]
-     | n%s == 0 -> s::(primeFactors (n//s) s)
-     | s == 2 -> primeFactors n (s + 1)
-     | otherwise -> primeFactors n (s + 2)
+  if s*s > n then [n]
+  else if n%s == 0 then s::(primeFactors (n//s) s)
+  else if s == 2 then primeFactors n (s + 1)
+  else primeFactors n (s + 2)
 
                     
 primes: Int -> List Int
 primes n = 1::(primeFactors n 2)
-
--- tweakable options
-opt = { 
-    trunkClr = Color.hsl 0.3 0.3 0.5, 
-    trunkH = 80, trunkW1 = 3, trunkW2 = 2, rootH = 0, 
-    fruitHueScale = 0.1, fruitHueOffs = 1.5, fruitSaturation = 0.4, fruitLightness = 0.7,
-    fruitR = 20,
-    branchCone = 100, coneDamping = 0.95, 
-    nestScale = 0.8, 
-    budTreshold = 17, budSpread = 5, budOffs = 30, 
-    animDelay = 5, maxNum = 512,
-    fontHeight = 22, captionHeight = 27, refH = 300 }
 
 fruitGrad: Float -> Color.Gradient
 fruitGrad h = 
@@ -93,7 +81,7 @@ branchFork n cone xs i =
 subTree: Float -> List Int -> Int -> Form
 subTree cone s i = 
   case s of
-    n::xs -> [0..(n - 1)] 
+    n::xs -> List.range 0 (n - 1)
      |> List.map (branchFork n (cone*opt.coneDamping) xs) 
      |> group
     _ -> fruit (opt.fruitHueScale*(toFloat i) + opt.fruitHueOffs)
@@ -127,43 +115,22 @@ caption n factors =
         |> centered
 
            
-primeView: (Int, Bool) -> (Int, Int) -> Element
-primeView (n, paused) (w, h) = 
-    let factors = primes n in           
-    flow down [caption n factors |> width  w,
-               layers [
-                ptree factors (w, h - opt.captionHeight),
-                (if paused then "[PAUSED] " else "")
-                     ++ "SPACE - toggle pause, ARROWS - prev/next"
-                  |> Text.fromString 
-                  |> Text.color Color.grey
-                  |> centered
-                  |> width w
-               ]]
-
-    
-type Update = Tick Float | Arrows {x: Int, y:Int} | Press Keyboard.KeyCode
-updates: Signal Update
-updates =
-  mergeMany
-  [ map Tick (Time.every (Time.second*opt.animDelay))
-  , map Arrows Keyboard.arrows
-  , map Press Keyboard.presses
-  ]
+primeView: Model -> Html Msg
+primeView {num, paused, windowWidth, windowHeight} =
+    let factors = primes num in
+    div []
+    [flow down
+      [caption num factors |> width windowWidth,
+       layers [
+        ptree factors (windowWidth, windowHeight - opt.captionHeight),
+        (if paused then "[PAUSED] " else "")
+             ++ "SPACE - toggle pause, ARROWS - prev/next"
+          |> Text.fromString
+          |> Text.color Color.grey
+          |> centered
+          |> width windowWidth
+       ]] |> toHtml]
 
 
-foldUpdates: Update -> (Int, Bool) -> (Int, Bool)
-foldUpdates update (i, paused) =
-  case update of
-    Arrows {x, y} -> (max 2 ((i + x + y)%opt.maxNum), paused)
-    Press 32 -> (i, not paused)
-    Tick _ -> ((i + (if paused then 0 else 1))%opt.maxNum, paused)
-    _ -> (i, paused)
 
-         
-main: Signal Element
-main = 
-    primeView 
-    <~ foldp foldUpdates (2, False) updates
-     ~ Window.dimensions
 
